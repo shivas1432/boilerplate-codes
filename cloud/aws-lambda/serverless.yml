@@ -1,0 +1,116 @@
+service: aws-lambda-boilerplate
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+  memorySize: 256
+  timeout: 30
+  
+  environment:
+    STAGE: ${self:provider.stage}
+    REGION: ${self:provider.region}
+    JWT_SECRET: ${env:JWT_SECRET}
+    DYNAMODB_TABLE: ${self:service}-${self:provider.stage}-users
+  
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource:
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}/index/*"
+
+functions:
+  # Authentication functions
+  register:
+    handler: src/handlers/auth.register
+    events:
+      - http:
+          path: auth/register
+          method: post
+          cors: true
+  
+  login:
+    handler: src/handlers/auth.login
+    events:
+      - http:
+          path: auth/login
+          method: post
+          cors: true
+  
+  # User functions
+  getProfile:
+    handler: src/handlers/users.getProfile
+    events:
+      - http:
+          path: users/profile
+          method: get
+          cors: true
+          authorizer:
+            name: authorizerFunc
+            resultTtlInSeconds: 0
+  
+  getUsers:
+    handler: src/handlers/users.getUsers
+    events:
+      - http:
+          path: users
+          method: get
+          cors: true
+          authorizer:
+            name: authorizerFunc
+            resultTtlInSeconds: 0
+  
+  # Authorizer function
+  authorizerFunc:
+    handler: src/handlers/authorizer.handler
+
+resources:
+  Resources:
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: EmailIndex
+            KeySchema:
+              - AttributeName: email
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+            BillingMode: PAY_PER_REQUEST
+        BillingMode: PAY_PER_REQUEST
+
+plugins:
+  - serverless-offline
+  - serverless-webpack
+  - serverless-dotenv-plugin
+
+custom:
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
+  
+  serverless-offline:
+    httpPort: 3000
+    babelOptions:
+      presets: ["env"]

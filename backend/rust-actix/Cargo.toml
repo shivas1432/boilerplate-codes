@@ -1,0 +1,57 @@
+[package]
+name = "rust-actix-boilerplate"
+version = "1.0.0"
+edition = "2021"
+authors = ["Kanugula Shivashanker <shivashanker@example.com>"]
+description = "Production-ready Rust Actix-web boilerplate with JWT authentication and PostgreSQL"
+license = "MIT"
+
+[dependencies]
+# Web framework
+actix-web = "4.4"
+actix-cors = "0.6"
+actix-files = "0.6"
+
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "migrate"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Authentication & Security
+jsonwebtoken = "9.2"
+bcrypt = "0.15"
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+# Configuration
+config = "0.13"
+dotenv = "0.15"
+
+# Logging
+env_logger = "0.10"
+log = "0.4"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Validation
+validator = { version = "0.16", features = ["derive"] }
+
+# Date/Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# HTTP client (for testing)
+reqwest = { version = "0.11", features = ["json"] }
+
+[dev-dependencies]
+actix-rt = "2.9"
+actix-test = "0.1"
+
+[[bin]]
+name = "server"
+path = "src/main.rs"
